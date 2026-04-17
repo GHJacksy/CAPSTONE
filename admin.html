@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CleanStream — Admin</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --teal:        #1D9E75;
+  --teal-dark:   #0F6E56;
+  --teal-deep:   #085041;
+  --teal-light:  #E1F5EE;
+  --teal-mid:    #9FE1CB;
+  --amber:       #EF9F27;
+  --amber-bg:    #FAEEDA;
+  --amber-text:  #854F0B;
+  --red:         #E24B4A;
+  --red-bg:      #FCEBEB;
+  --red-text:    #A32D2D;
+  --blue:        #378ADD;
+  --blue-bg:     #E6F1FB;
+  --blue-text:   #185FA5;
+  --gray-bg:     #F5F5F3;
+  --gray-mid:    #D3D1C7;
+  --gray-muted:  #888780;
+  --gray-hint:   #B4B2A9;
+  --text-primary:   #1A1A18;
+  --text-secondary: #5F5E5A;
+  --text-muted:     #888780;
+  --text-hint:      #B4B2A9;
+  --border:      rgba(0,0,0,0.10);
+  --border-mid:  rgba(0,0,0,0.15);
+  --white:       #FFFFFF;
+}
+
+body {
+  background: #EAEAE6;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  min-height: 100vh;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 32px 16px 48px;
+}
+
+h1.app-title { font-size:13px; font-weight:500; color:var(--teal-dark); letter-spacing:.04em; margin-bottom:4px; text-align:center; }
+p.app-sub    { font-size:11px; color:var(--gray-muted); text-align:center; margin-bottom:28px; }
+
+/* ── Phone ──────────────────────────────────────────────── */
+.phone {
+  width:300px; background:var(--white); border-radius:44px;
+  border:1.5px solid rgba(0,0,0,0.18); overflow:hidden;
+  display:flex; flex-direction:column;
+  box-shadow:0 8px 40px rgba(0,0,0,0.14); position:relative;
+}
+.phone-topbar { height:36px; background:var(--white); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.notch { width:80px; height:14px; background:var(--gray-bg); border-radius:0 0 12px 12px; }
+
+/* ── Screen system ──────────────────────────────────────── */
+.screen-container { flex:1; position:relative; overflow:hidden; min-height:560px; }
+.screen {
+  position:absolute; inset:0; display:flex; flex-direction:column;
+  background:var(--gray-bg); opacity:0; pointer-events:none;
+  transition:opacity 0.22s ease, transform 0.22s ease;
+  transform:translateX(28px);
+}
+.screen.active { opacity:1; pointer-events:all; transform:translateX(0); }
+
+/* ── Shared ─────────────────────────────────────────────── */
+.s-header { background:var(--white); padding:12px 16px 10px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; border-bottom:0.5px solid var(--border); }
+.s-title  { font-size:16px; font-weight:500; color:var(--text-primary); }
+.s-sub    { font-size:11px; color:var(--text-muted); margin-top:1px; }
+.s-body   { flex:1; overflow-y:auto; overflow-x:hidden; padding:14px 16px 12px; display:flex; flex-direction:column; gap:10px; scrollbar-width:none; }
+.s-body::-webkit-scrollbar { display:none; }
+
+.icon-btn { width:34px; height:34px; border-radius:50%; background:var(--gray-bg); display:flex; align-items:center; justify-content:center; flex-shrink:0; cursor:pointer; transition:background 0.15s; position:relative; }
+.icon-btn:hover { background:var(--gray-mid); }
+.icon-btn svg { width:16px; height:16px; fill:none; stroke:var(--text-muted); stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+.notif-pip { position:absolute; top:6px; right:6px; width:7px; height:7px; border-radius:50%; background:var(--red); border:1.5px solid var(--white); }
+
+.badge { font-size:10px; font-weight:500; padding:3px 8px; border-radius:20px; flex-shrink:0; }
+.b-high    { background:var(--red-bg);     color:var(--red-text); }
+.b-mod     { background:var(--amber-bg);   color:var(--amber-text); }
+.b-low     { background:var(--teal-light); color:var(--teal-dark); }
+.b-pending { background:var(--blue-bg);    color:var(--blue-text); }
+.b-prog    { background:var(--amber-bg);   color:var(--amber-text); }
+.b-done    { background:var(--teal-light); color:var(--teal-dark); }
+.sec-label { font-size:13px; font-weight:500; color:var(--text-primary); }
+
+.back-btn { width:34px; height:34px; border-radius:50%; background:var(--gray-bg); display:flex; align-items:center; justify-content:center; flex-shrink:0; cursor:pointer; transition:background 0.15s; }
+.back-btn:hover { background:var(--gray-mid); }
+.back-btn svg { width:16px; height:16px; fill:none; stroke:var(--text-muted); stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+
+/* ── Nav bar ────────────────────────────────────────────── */
+.nav-bar { height:56px; background:var(--white); border-top:0.5px solid var(--border); display:flex; align-items:center; justify-content:space-around; flex-shrink:0; padding:0 4px; }
+.nav-tab { display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer; padding:5px 10px; border-radius:12px; transition:background 0.15s; -webkit-tap-highlight-color:transparent; }
+.nav-tab:hover { background:var(--gray-bg); }
+.nav-tab svg  { width:22px; height:22px; fill:none; stroke:var(--gray-hint); stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; transition:stroke 0.15s; }
+.nav-tab span { font-size:10px; color:var(--gray-hint); transition:color 0.15s; }
+.nav-tab.active svg  { stroke:var(--teal); }
+.nav-tab.active span { color:var(--teal); font-weight:500; }
+
+/* ── Map ────────────────────────────────────────────────── */
+.map-area { border-radius:14px; background:#D4EFE4; height:140px; position:relative; overflow:hidden; flex-shrink:0; }
+.map-grid { position:absolute; inset:0; opacity:.18; }
+.pin { position:absolute; width:13px; height:13px; border-radius:50%; border:2px solid var(--white); transform:translate(-50%,-50%); cursor:pointer; transition:transform 0.2s; }
+.pin:hover { transform:translate(-50%,-50%) scale(1.3); }
+.pin-green  { background:var(--teal); }
+.pin-yellow { background:var(--amber); }
+.pin-red    { background:var(--red); }
+.map-tag { position:absolute; bottom:8px; left:10px; font-size:10px; font-weight:500; color:var(--teal-dark); background:rgba(255,255,255,.88); padding:3px 8px; border-radius:8px; }
+.map-legend { display:flex; gap:12px; flex-shrink:0; }
+.leg { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--text-muted); }
+.leg-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+
+/* ── Stat cards ─────────────────────────────────────────── */
+.stat-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; flex-shrink:0; }
+.stat-card { background:var(--white); border-radius:12px; padding:11px 8px; text-align:center; border:0.5px solid var(--border); }
+.stat-val { font-size:22px; font-weight:500; color:var(--text-primary); }
+.stat-lbl { font-size:10px; color:var(--text-muted); margin-top:2px; line-height:1.3; }
+
+/* ── Notifications ──────────────────────────────────────── */
+.notif-item { background:var(--white); border-radius:12px; padding:11px 13px; border:0.5px solid var(--border); display:flex; gap:10px; align-items:flex-start; cursor:pointer; transition:background 0.15s; }
+.notif-item:hover { background:#f9f9f7; }
+.notif-item.urgent { background:var(--red-bg); border-color:rgba(226,75,74,0.22); }
+.notif-item.urgent:hover { background:#fae0e0; }
+.notif-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; margin-top:3px; }
+.n-title { font-size:12px; font-weight:500; color:var(--text-primary); }
+.n-sub   { font-size:11px; color:var(--text-muted); margin-top:2px; }
+.notif-item.urgent .n-title { color:var(--red-text); }
+.notif-item.urgent .n-sub   { color:#C03030; }
+
+/* ── Report cards ───────────────────────────────────────── */
+.r-card { background:var(--white); border-radius:12px; padding:11px 13px; border:0.5px solid var(--border); display:flex; flex-direction:column; gap:6px; cursor:pointer; transition:background 0.15s; }
+.r-card:hover { background:#f9f9f7; }
+.r-card-row { display:flex; align-items:center; justify-content:space-between; }
+.r-loc  { font-size:13px; font-weight:500; color:var(--text-primary); }
+.r-meta { font-size:11px; color:var(--text-hint); }
+
+/* ── Filter chips ───────────────────────────────────────── */
+.filter-row { display:flex; gap:6px; flex-shrink:0; flex-wrap:wrap; }
+.chip { font-size:11px; padding:5px 11px; border-radius:20px; border:0.5px solid var(--border-mid); color:var(--text-muted); white-space:nowrap; cursor:pointer; background:var(--white); transition:all 0.15s; }
+.chip:hover { background:var(--gray-bg); }
+.chip.active { background:var(--teal); color:var(--white); border-color:var(--teal); }
+
+/* ── Schedule card ──────────────────────────────────────── */
+.severity-banner { border-radius:12px; padding:11px 14px; background:var(--white); border:0.5px solid var(--border); border-left:3px solid var(--red); border-top-left-radius:0; border-bottom-left-radius:0; flex-shrink:0; }
+.sev-name { font-size:14px; font-weight:500; color:var(--text-primary); }
+.sev-sub  { font-size:11px; color:var(--text-muted); margin-top:3px; }
+.sched-card { background:var(--white); border-radius:14px; border:0.5px solid var(--border); padding:12px 14px; flex-shrink:0; }
+.sched-title { font-size:13px; font-weight:500; color:var(--text-primary); margin-bottom:9px; }
+.sched-row { display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:0.5px solid var(--border); }
+.sched-row:last-child { border-bottom:none; padding-bottom:0; }
+.sk { font-size:11px; color:var(--text-muted); }
+.sv { font-size:11px; font-weight:500; color:var(--text-primary); }
+
+/* ── Fields ─────────────────────────────────────────────── */
+.field { display:flex; flex-direction:column; gap:4px; }
+.f-label { font-size:11px; color:var(--text-muted); }
+.f-box { background:var(--white); border:0.5px solid var(--border-mid); border-radius:10px; padding:9px 12px; font-size:12px; color:var(--text-primary); display:flex; align-items:center; justify-content:space-between; cursor:pointer; transition:border-color 0.15s; }
+.f-box:hover { border-color:rgba(0,0,0,0.3); }
+.f-box svg { width:14px; height:14px; fill:none; stroke:var(--gray-hint); stroke-width:1.8; stroke-linecap:round; }
+.f-box.placeholder { color:var(--text-hint); }
+.f-area { height:52px; align-items:flex-start; }
+
+/* ── Action buttons ─────────────────────────────────────── */
+.action-row { display:flex; gap:8px; flex-shrink:0; }
+.btn-approve { flex:1; background:var(--teal); color:var(--white); border:none; border-radius:12px; padding:11px; font-size:12px; font-weight:500; cursor:pointer; transition:background 0.15s; font-family:inherit; }
+.btn-approve:hover { background:var(--teal-dark); }
+.btn-modify  { flex:1; background:var(--white); color:var(--text-primary); border:0.5px solid var(--border-mid); border-radius:12px; padding:11px; font-size:12px; cursor:pointer; transition:background 0.15s; font-family:inherit; }
+.btn-modify:hover { background:var(--gray-bg); }
+
+/* ── Toast ──────────────────────────────────────────────── */
+.toast { position:absolute; bottom:68px; left:50%; transform:translateX(-50%) translateY(8px); background:#1A1A18; color:#fff; font-size:11px; padding:8px 14px; border-radius:20px; white-space:nowrap; opacity:0; pointer-events:none; transition:opacity 0.2s, transform 0.2s; z-index:99; }
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* ── Success overlay ────────────────────────────────────── */
+.success-overlay { position:absolute; inset:0; background:rgba(255,255,255,0.96); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; opacity:0; pointer-events:none; transition:opacity 0.25s; z-index:50; }
+.success-overlay.show { opacity:1; pointer-events:all; }
+.success-circle { width:56px; height:56px; border-radius:50%; background:var(--teal-light); display:flex; align-items:center; justify-content:center; }
+.success-circle svg { width:28px; height:28px; fill:none; stroke:var(--teal); stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round; }
+.success-title { font-size:15px; font-weight:500; color:var(--text-primary); }
+.success-sub   { font-size:12px; color:var(--text-muted); text-align:center; max-width:200px; line-height:1.5; }
+.success-btn   { margin-top:6px; background:var(--teal); color:#fff; border:none; border-radius:12px; padding:10px 28px; font-size:12px; font-weight:500; cursor:pointer; font-family:inherit; }
+
+/* ══════════════════════════════════════════════════════════
+   AUTH SCREENS
+══════════════════════════════════════════════════════════ */
+#screen-loading { background:var(--teal-dark); display:flex; flex-direction:column; align-items:center; justify-content:center; }
+
+.loading-logo-wrap { display:flex; flex-direction:column; align-items:center; gap:18px; animation:fadeUp 0.8s ease both; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+.loading-river-icon { width:88px; height:88px; border-radius:26px; background:rgba(255,255,255,0.15); display:flex; align-items:center; justify-content:center; border:2px solid rgba(255,255,255,0.25); }
+.loading-app-name   { font-size:28px; font-weight:600; color:#fff; letter-spacing:-0.3px; }
+.loading-tagline    { font-size:13px; color:rgba(255,255,255,0.7); text-align:center; line-height:1.5; max-width:200px; }
+.loading-role-chip  { background:rgba(255,255,255,0.18); color:#fff; font-size:11px; font-weight:500; padding:4px 12px; border-radius:20px; border:1px solid rgba(255,255,255,0.3); }
+.loading-bar-wrap   { width:120px; margin-top:40px; }
+.loading-track { height:3px; background:rgba(255,255,255,0.25); border-radius:3px; overflow:hidden; }
+.loading-fill  { height:100%; background:#fff; border-radius:3px; width:0%; animation:loadFill 2.2s ease forwards; animation-delay:0.4s; }
+@keyframes loadFill { 0%{width:0%} 60%{width:70%} 80%{width:85%} 100%{width:100%} }
+.loading-version { margin-top:10px; font-size:10px; color:rgba(255,255,255,0.45); text-align:center; }
+
+.auth-screen-body { flex:1; overflow-y:auto; overflow-x:hidden; padding:24px 24px 20px; display:flex; flex-direction:column; gap:0; scrollbar-width:none; }
+.auth-screen-body::-webkit-scrollbar { display:none; }
+.auth-top { display:flex; flex-direction:column; align-items:center; padding:24px 0 20px; flex-shrink:0; }
+.auth-logo-ring { width:64px; height:64px; border-radius:20px; background:var(--teal-light); display:flex; align-items:center; justify-content:center; margin-bottom:14px; }
+.auth-logo-ring svg { width:36px; height:36px; }
+.auth-heading { font-size:22px; font-weight:500; color:var(--text-primary); text-align:center; }
+.auth-sub     { font-size:13px; color:var(--text-muted); text-align:center; margin-top:4px; }
+.auth-form    { display:flex; flex-direction:column; gap:12px; margin-top:8px; }
+.auth-field   { display:flex; flex-direction:column; gap:5px; }
+.auth-label   { font-size:12px; font-weight:500; color:var(--text-secondary); }
+
+.role-badge { display:inline-flex; align-items:center; gap:6px; background:#EDF3FF; color:#185FA5; font-size:11px; font-weight:500; padding:4px 10px; border-radius:20px; margin-bottom:6px; }
+.role-badge svg { width:12px; height:12px; fill:none; stroke:#185FA5; stroke-width:2; stroke-linecap:round; }
+
+.auth-input { width:100%; background:var(--white); border:0.5px solid var(--border-mid); border-radius:10px; padding:11px 14px; font-size:13px; color:var(--text-primary); font-family:inherit; outline:none; transition:border-color 0.2s; }
+.auth-input:focus { border-color:var(--teal); }
+.auth-input::placeholder { color:var(--text-hint); }
+
+.auth-primary-btn { background:var(--teal); color:var(--white); border:none; border-radius:12px; padding:13px; font-size:14px; font-weight:500; cursor:pointer; width:100%; transition:background 0.15s; margin-top:4px; font-family:inherit; }
+.auth-primary-btn:hover { background:var(--teal-dark); }
+.auth-secondary-btn { background:var(--white); color:var(--text-primary); border:0.5px solid var(--border-mid); border-radius:12px; padding:11px; font-size:13px; cursor:pointer; width:100%; transition:background 0.15s; font-family:inherit; }
+.auth-secondary-btn:hover { background:var(--gray-bg); }
+
+.auth-divider { display:flex; align-items:center; gap:10px; margin:14px 0 4px; }
+.auth-divider::before, .auth-divider::after { content:''; flex:1; height:0.5px; background:var(--border-mid); }
+.auth-divider span { font-size:11px; color:var(--text-hint); white-space:nowrap; }
+
+.auth-switch { text-align:center; font-size:12px; color:var(--text-muted); margin-top:14px; flex-shrink:0; }
+.auth-switch a { color:var(--teal); cursor:pointer; font-weight:500; text-decoration:none; }
+.auth-switch a:hover { text-decoration:underline; }
+
+.forgot-link { font-size:11px; color:var(--teal); cursor:pointer; text-align:right; margin-top:-4px; display:block; }
+.forgot-link:hover { text-decoration:underline; }
+
+.input-icon-wrap { position:relative; }
+.input-icon-wrap .auth-input { padding-left:38px; }
+.input-icon-wrap .field-ico { position:absolute; left:12px; top:50%; transform:translateY(-50%); width:16px; height:16px; fill:none; stroke:var(--gray-hint); stroke-width:1.8; stroke-linecap:round; }
+
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+</style>
+</head>
+<body>
+
+<h1 class="app-title">CleanStream — Admin</h1>
+<p class="app-sub">Tap to navigate between screens</p>
+
+<div class="phone" id="phone">
+  <div class="phone-topbar"><div class="notch"></div></div>
+
+  <div class="screen-container">
+
+    <!-- ══════════════════════════════════════════════════════
+         LOADING SCREEN
+    ══════════════════════════════════════════════════════ -->
+    <div class="screen active" id="screen-loading" style="background:var(--teal-dark)">
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px">
+        <div class="loading-logo-wrap">
+          <div class="loading-river-icon">
+            <svg viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6 34 Q13 26 20 30 Q27 34 34 26 Q41 18 46 22" stroke="white" stroke-width="3" stroke-linecap="round"/>
+              <path d="M6 42 Q13 34 20 38 Q27 42 34 34 Q41 26 46 30" stroke="rgba(255,255,255,0.5)" stroke-width="2.5" stroke-linecap="round"/>
+              <path d="M18 10 L26 6 L34 10 L34 22 Q26 28 18 22 Z" stroke="white" stroke-width="2" stroke-linejoin="round" fill="rgba(255,255,255,0.12)"/>
+              <circle cx="26" cy="15" r="3" fill="white"/>
+            </svg>
+          </div>
+          <div class="loading-app-name">CleanStream</div>
+          <div class="loading-role-chip">Admin Portal</div>
+          <div class="loading-tagline">Waterway monitoring &amp; cleanup management</div>
+          <div class="loading-bar-wrap">
+            <div class="loading-track"><div class="loading-fill"></div></div>
+            <div class="loading-version">v1.0.0 · Admin</div>
+          </div>
+        </div>
+      </div>
+      <div style="padding:0 24px 32px;display:flex;flex-direction:column;gap:10px;animation:fadeUp 0.8s ease 1.8s both">
+        <button class="auth-primary-btn" style="background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.4)" onclick="navigate('login')">Admin sign in</button>
+        <button class="auth-primary-btn" style="background:white;color:var(--teal-dark)" onclick="navigate('signup')">Register admin account</button>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         LOGIN SCREEN
+    ══════════════════════════════════════════════════════ -->
+    <div class="screen" id="screen-login" style="background:var(--white)">
+      <div class="auth-screen-body">
+        <div class="auth-top">
+          <div class="auth-logo-ring">
+            <svg viewBox="0 0 36 36" fill="none">
+              <path d="M4 24 Q9 18 14 21 Q19 24 24 18 Q29 12 32 15" stroke="var(--teal)" stroke-width="2.5" stroke-linecap="round"/>
+              <path d="M4 30 Q9 24 14 27 Q19 30 24 24 Q29 18 32 21" stroke="var(--teal-mid)" stroke-width="2" stroke-linecap="round"/>
+              <path d="M13 8 L18 5 L23 8 L23 17 Q18 21 13 17 Z" stroke="var(--teal)" stroke-width="1.8" stroke-linejoin="round" fill="var(--teal-light)"/>
+              <circle cx="18" cy="12" r="2.5" fill="var(--teal)"/>
+            </svg>
+          </div>
+          <div class="role-badge">
+            <svg viewBox="0 0 16 16"><rect x="2" y="8" width="12" height="7" rx="1"/><path d="M5 8V6a3 3 0 0 1 6 0v2"/></svg>
+            Admin account
+          </div>
+          <div class="auth-heading">Admin sign in</div>
+          <div class="auth-sub">Access the CleanStream admin portal</div>
+        </div>
+
+        <div class="auth-form">
+          <div class="auth-field">
+            <div class="auth-label">Admin email</div>
+            <div class="input-icon-wrap">
+              <svg class="field-ico" viewBox="0 0 16 16"><path d="M2 4h12v9H2z" rx="1"/><path d="M2 4l6 5 6-5"/></svg>
+              <input class="auth-input" type="email" placeholder="admin@cleanstream.gov.ph"/>
+            </div>
+          </div>
+          <div class="auth-field">
+            <div class="auth-label">Password</div>
+            <div class="input-icon-wrap">
+              <svg class="field-ico" viewBox="0 0 16 16"><rect x="3" y="7" width="10" height="7" rx="1"/><path d="M5 7V5a3 3 0 0 1 6 0v2"/></svg>
+              <input class="auth-input" type="password" placeholder="Enter your password"/>
+            </div>
+            <span class="forgot-link" onclick="showToast('Password reset sent to admin email')">Forgot password?</span>
+          </div>
+          <div class="auth-field">
+            <div class="auth-label">Admin access code</div>
+            <div class="input-icon-wrap">
+              <svg class="field-ico" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="M8 5v4M8 11v1"/></svg>
+              <input class="auth-input" type="text" placeholder="Enter 6-digit code"/>
+            </div>
+          </div>
+
+          <button class="auth-primary-btn" onclick="loginAdmin()">Sign in to portal</button>
+
+          <div class="auth-divider"><span>secure admin access</span></div>
+
+          <button class="auth-secondary-btn" onclick="loginAdmin()">
+            <span style="display:flex;align-items:center;justify-content:center;gap:8px">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" fill="#185FA5"/><path d="M8 5v6M5 8h6" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
+              Sign in with SSO
+            </span>
+          </button>
+        </div>
+
+        <div class="auth-switch">
+          Need an account? <a onclick="navigate('signup')">Request access</a>
+        </div>
+        <div style="margin-top:12px;text-align:center">
+          <a style="font-size:11px;color:var(--text-hint);cursor:pointer" onclick="showToast('Redirecting to citizen portal...')">Citizen? Sign in here →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         SIGN UP SCREEN
+    ══════════════════════════════════════════════════════ -->
+    <div class="screen" id="screen-signup" style="background:var(--white)">
+      <div class="auth-screen-body">
+        <div class="auth-top" style="padding:18px 0 14px">
+          <div class="auth-logo-ring">
+            <svg viewBox="0 0 36 36" fill="none">
+              <path d="M4 24 Q9 18 14 21 Q19 24 24 18 Q29 12 32 15" stroke="var(--teal)" stroke-width="2.5" stroke-linecap="round"/>
+              <path d="M4 30 Q9 24 14 27 Q19 30 24 24 Q29 18 32 21" stroke="var(--teal-mid)" stroke-width="2" stroke-linecap="round"/>
+              <path d="M13 8 L18 5 L23 8 L23 17 Q18 21 13 17 Z" stroke="var(--teal)" stroke-width="1.8" stroke-linejoin="round" fill="var(--teal-light)"/>
+              <circle cx="18" cy="12" r="2.5" fill="var(--teal)"/>
+            </svg>
+          </div>
+          <div class="role-badge">
+            <svg viewBox="0 0 16 16"><rect x="2" y="8" width="12" height="7" rx="1"/><path d="M5 8V6a3 3 0 0 1 6 0v2"/></svg>
+            Admin account
+          </div>
+          <div class="auth-heading">Request access</div>
+          <div class="auth-sub">Register as a CleanStream administrator</div>
+        </div>
+
+        <div class="auth-form">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="auth-field"><div class="auth-label">First name</div><input class="auth-input" type="text" placeholder="Maria"/></div>
+            <div class="auth-field"><div class="auth-label">Last name</div><input class="auth-input" type="text" placeholder="Santos"/></div>
+          </div>
+          <div class="auth-field">
+            <div class="auth-label">Official email</div>
+            <div class="input-icon-wrap">
+              <svg class="field-ico" viewBox="0 0 16 16"><path d="M2 4h12v9H2z" rx="1"/><path d="M2 4l6 5 6-5"/></svg>
+              <input class="auth-input" type="email" placeholder="admin@cebu.gov.ph"/>
+            </div>
+          </div>
+          <div class="auth-field">
+            <div class="auth-label">Agency / department</div>
+            <div class="input-icon-wrap">
+              <svg class="field-ico" viewBox="0 0 16 16"><rect x="2" y="6" width="12" height="8" rx="1"/><path d="M5 6V4a3 3 0 0 1 6 0v2"/></svg>
+              <input class="auth-input" type="text" placeholder="e.g. CENRO Cebu City"/>
+            </div>
+          </div>
+          <div class="auth-field">
+            <div class="auth-label">Employee ID</div>
+            <input class="auth-input" type="text" placeholder="e.g. CEBU-2024-0042"/>
+          </div>
+          <div class="auth-field">
+            <div class="auth-label">Password</div>
+            <div class="input-icon-wrap">
+              <svg class="field-ico" viewBox="0 0 16 16"><rect x="3" y="7" width="10" height="7" rx="1"/><path d="M5 7V5a3 3 0 0 1 6 0v2"/></svg>
+              <input class="auth-input" type="password" placeholder="Create a strong password"/>
+            </div>
+          </div>
+
+          <div style="background:var(--blue-bg);border-radius:10px;padding:10px 12px;display:flex;gap:9px;align-items:flex-start">
+            <svg style="width:16px;height:16px;fill:none;stroke:var(--blue-text);stroke-width:1.8;stroke-linecap:round;flex-shrink:0;margin-top:1px" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="M8 7v4M8 5v1"/></svg>
+            <div style="font-size:11px;color:var(--blue-text);line-height:1.5">Your registration will be reviewed by a super admin before access is granted.</div>
+          </div>
+
+          <button class="auth-primary-btn" onclick="signupAdmin()">Submit request</button>
+        </div>
+
+        <div class="auth-switch">
+          Already registered? <a onclick="navigate('login')">Sign in</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         APP SCREENS
+    ══════════════════════════════════════════════════════ -->
+
+    <!-- Dashboard -->
+    <div class="screen" id="screen-dashboard">
+      <div class="s-header">
+        <div><div class="s-title">Admin dashboard</div><div class="s-sub">CleanStream · Cebu City</div></div>
+        <div class="icon-btn" onclick="navigate('alerts')">
+          <svg viewBox="0 0 16 16"><path d="M13 11V7A5 5 0 0 0 3 7v4l-1 2h12l-1-2z"/><path d="M6.5 13a1.5 1.5 0 0 0 3 0"/></svg>
+          <div class="notif-pip"></div>
+        </div>
+      </div>
+      <div class="s-body">
+        <div class="stat-grid">
+          <div class="stat-card"><div class="stat-val">142</div><div class="stat-lbl">Total reports</div></div>
+          <div class="stat-card"><div class="stat-val" style="color:var(--red)">18</div><div class="stat-lbl">High alerts</div></div>
+          <div class="stat-card"><div class="stat-val" style="color:var(--amber)">34</div><div class="stat-lbl">Pending cleanups</div></div>
+        </div>
+        <div class="map-area">
+          <svg class="map-grid" width="100%" height="100%"><defs><pattern id="g2" width="22" height="22" patternUnits="userSpaceOnUse"><path d="M22 0L0 0 0 22" fill="none" stroke="#1D9E75" stroke-width=".5"/></pattern></defs><rect width="100%" height="100%" fill="url(#g2)"/></svg>
+          <div class="pin pin-red"    style="top:28%;left:22%"></div>
+          <div class="pin pin-red"    style="top:20%;left:63%"></div>
+          <div class="pin pin-yellow" style="top:52%;left:54%"></div>
+          <div class="pin pin-yellow" style="top:66%;left:32%"></div>
+          <div class="pin pin-green"  style="top:38%;left:78%"></div>
+          <div class="pin pin-red"    style="top:42%;left:44%"></div>
+          <div class="map-tag">Waste hotspots</div>
+        </div>
+        <div class="map-legend">
+          <div class="leg"><div class="leg-dot" style="background:var(--red)"></div>High</div>
+          <div class="leg"><div class="leg-dot" style="background:var(--amber)"></div>Moderate</div>
+          <div class="leg"><div class="leg-dot" style="background:var(--teal)"></div>Low</div>
+        </div>
+        <div class="sec-label">Priority alerts</div>
+        <div class="notif-item urgent" onclick="navigate('alerts')">
+          <div class="notif-dot" style="background:var(--red)"></div>
+          <div style="flex:1"><div class="n-title">High waste — Punta Princesa</div><div class="n-sub">Plastic surge detected · 2 min ago</div><div style="margin-top:5px"><span class="badge b-high">Immediate action</span></div></div>
+        </div>
+        <div class="notif-item urgent" onclick="navigate('alerts')">
+          <div class="notif-dot" style="background:var(--red)"></div>
+          <div style="flex:1"><div class="n-title">High waste — Guadalupe Creek</div><div class="n-sub">New report submitted · 14 min ago</div><div style="margin-top:5px"><span class="badge b-high">Needs scheduling</span></div></div>
+        </div>
+        <div class="notif-item" onclick="navigate('alerts')">
+          <div class="notif-dot" style="background:var(--amber)"></div>
+          <div style="flex:1"><div class="n-title">Moderate — Labangon River</div><div class="n-sub">3 new reports · 1h ago</div><div style="margin-top:5px"><span class="badge b-mod">Monitor closely</span></div></div>
+        </div>
+      </div>
+      <div class="nav-bar">
+        <div class="nav-tab active" onclick="navigate('dashboard')"><svg viewBox="0 0 16 16"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg><span>Dashboard</span></div>
+        <div class="nav-tab" onclick="navigate('reports')"><svg viewBox="0 0 16 16"><path d="M2 13 L5 8 L8 10 L11 5 L14 7"/></svg><span>Reports</span></div>
+        <div class="nav-tab" onclick="navigate('schedule')"><svg viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="11" rx="1"/><path d="M5 1v4M11 1v4M2 7h12"/></svg><span>Schedule</span></div>
+        <div class="nav-tab" onclick="navigate('alerts')"><svg viewBox="0 0 16 16"><path d="M13 11V7A5 5 0 0 0 3 7v4l-1 2h12l-1-2z"/><path d="M6.5 13a1.5 1.5 0 0 0 3 0"/></svg><span>Alerts</span></div>
+      </div>
+    </div>
+
+    <!-- Reports -->
+    <div class="screen" id="screen-reports">
+      <div class="s-header">
+        <div class="s-title">All reports</div>
+        <div class="icon-btn" onclick="showToast('Filter options coming soon')"><svg viewBox="0 0 16 16"><path d="M2 4h12M4 8h8M6 12h4"/></svg></div>
+      </div>
+      <div class="s-body">
+        <div class="filter-row">
+          <div class="chip active" onclick="filterChip(this)">All</div>
+          <div class="chip" onclick="filterChip(this)">High</div>
+          <div class="chip" onclick="filterChip(this)">Moderate</div>
+          <div class="chip" onclick="filterChip(this)">Pending</div>
+        </div>
+        <div class="r-card" onclick="navigate('schedule')"><div class="r-card-row"><span class="r-loc">Punta Princesa Canal</span><span class="badge b-high">High</span></div><div class="r-meta">Apr 4 · 9:12 AM · Juan M.</div><div class="r-card-row"><span class="badge b-prog">In progress</span><span style="font-size:11px;color:var(--text-hint)">View details →</span></div></div>
+        <div class="r-card" onclick="navigate('schedule')"><div class="r-card-row"><span class="r-loc">Guadalupe Creek</span><span class="badge b-high">High</span></div><div class="r-meta">Apr 4 · 8:50 AM · Maria S.</div><div class="r-card-row"><span class="badge b-pending">Pending</span><span style="font-size:11px;color:var(--text-hint)">View details →</span></div></div>
+        <div class="r-card" onclick="navigate('schedule')"><div class="r-card-row"><span class="r-loc">Labangon River</span><span class="badge b-mod">Moderate</span></div><div class="r-meta">Apr 3 · 3:00 PM · Rico T.</div><div class="r-card-row"><span class="badge b-pending">Pending</span><span style="font-size:11px;color:var(--text-hint)">View details →</span></div></div>
+        <div class="r-card" onclick="navigate('schedule')"><div class="r-card-row"><span class="r-loc">Kinasang-an Waterway</span><span class="badge b-mod">Moderate</span></div><div class="r-meta">Apr 3 · 1:20 PM · Leo B.</div><div class="r-card-row"><span class="badge b-prog">In progress</span><span style="font-size:11px;color:var(--text-hint)">View details →</span></div></div>
+        <div class="r-card" onclick="showToast('Report resolved — no action needed')"><div class="r-card-row"><span class="r-loc">Mambaling Waterway</span><span class="badge b-low">Low</span></div><div class="r-meta">Apr 2 · 4:10 PM · Ana R.</div><div class="r-card-row"><span class="badge b-done">Resolved</span><span style="font-size:11px;color:var(--text-hint)">View details →</span></div></div>
+      </div>
+      <div class="nav-bar">
+        <div class="nav-tab" onclick="navigate('dashboard')"><svg viewBox="0 0 16 16"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg><span>Dashboard</span></div>
+        <div class="nav-tab active" onclick="navigate('reports')"><svg viewBox="0 0 16 16"><path d="M2 13 L5 8 L8 10 L11 5 L14 7"/></svg><span>Reports</span></div>
+        <div class="nav-tab" onclick="navigate('schedule')"><svg viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="11" rx="1"/><path d="M5 1v4M11 1v4M2 7h12"/></svg><span>Schedule</span></div>
+        <div class="nav-tab" onclick="navigate('alerts')"><svg viewBox="0 0 16 16"><path d="M13 11V7A5 5 0 0 0 3 7v4l-1 2h12l-1-2z"/><path d="M6.5 13a1.5 1.5 0 0 0 3 0"/></svg><span>Alerts</span></div>
+      </div>
+    </div>
+
+    <!-- Schedule -->
+    <div class="screen" id="screen-schedule">
+      <div class="s-header">
+        <div class="back-btn" onclick="navigate('reports')"><svg viewBox="0 0 16 16"><path d="M10 3L5 8l5 5"/></svg></div>
+        <div class="s-title">Schedule cleanup</div><div style="width:34px"></div>
+      </div>
+      <div class="s-body">
+        <div class="severity-banner">
+          <div class="sev-name">Punta Princesa Canal</div>
+          <div class="sev-sub">High severity · Plastic + debris detected</div>
+          <div style="margin-top:6px"><span class="badge b-high">CNN confidence: 94%</span></div>
+        </div>
+        <div class="sched-card">
+          <div class="sched-title">Suggested schedule</div>
+          <div class="sched-row"><span class="sk">Date</span><span class="sv">April 5, 2026</span></div>
+          <div class="sched-row"><span class="sk">Time</span><span class="sv">7:00 AM – 12:00 PM</span></div>
+          <div class="sched-row"><span class="sk">Duration</span><span class="sv">5 hours</span></div>
+          <div class="sched-row"><span class="sk">Priority</span><span class="sv" style="color:var(--red-text)">High</span></div>
+          <div class="sched-row"><span class="sk">Area size</span><span class="sv">~200m stretch</span></div>
+        </div>
+        <div class="field">
+          <div class="f-label">Assign cleanup team</div>
+          <div class="f-box placeholder" onclick="cycleTeam(this)">Select team<svg viewBox="0 0 16 16"><path d="M4 6l4 4 4-4"/></svg></div>
+        </div>
+        <div class="field">
+          <div class="f-label">Modify date / time</div>
+          <div class="f-box placeholder">April 5, 2026 · 7:00 AM<svg viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="11" rx="1"/><path d="M5 1v4M11 1v4M2 7h12"/></svg></div>
+        </div>
+        <div class="field">
+          <div class="f-label">Additional notes</div>
+          <div class="f-box f-area placeholder">Add instructions for the team...</div>
+        </div>
+        <div class="action-row">
+          <button class="btn-approve" onclick="approveSchedule()">Approve schedule</button>
+          <button class="btn-modify"  onclick="showToast('Edit mode enabled')">Modify</button>
+        </div>
+      </div>
+      <div class="nav-bar">
+        <div class="nav-tab" onclick="navigate('dashboard')"><svg viewBox="0 0 16 16"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg><span>Dashboard</span></div>
+        <div class="nav-tab" onclick="navigate('reports')"><svg viewBox="0 0 16 16"><path d="M2 13 L5 8 L8 10 L11 5 L14 7"/></svg><span>Reports</span></div>
+        <div class="nav-tab active" onclick="navigate('schedule')"><svg viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="11" rx="1"/><path d="M5 1v4M11 1v4M2 7h12"/></svg><span>Schedule</span></div>
+        <div class="nav-tab" onclick="navigate('alerts')"><svg viewBox="0 0 16 16"><path d="M13 11V7A5 5 0 0 0 3 7v4l-1 2h12l-1-2z"/><path d="M6.5 13a1.5 1.5 0 0 0 3 0"/></svg><span>Alerts</span></div>
+      </div>
+      <div class="success-overlay" id="schedule-success">
+        <div class="success-circle"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></div>
+        <div class="success-title">Schedule approved!</div>
+        <div class="success-sub">Team A has been notified. Cleanup set for April 5, 7:00 AM.</div>
+        <button class="success-btn" onclick="dismissSuccess()">Back to reports</button>
+      </div>
+    </div>
+
+    <!-- Alerts -->
+    <div class="screen" id="screen-alerts">
+      <div class="s-header">
+        <div class="s-title">Notifications</div>
+        <div class="mark-all" style="font-size:12px;color:var(--teal);cursor:pointer;padding:4px 8px;border-radius:8px;transition:background 0.15s" onmouseover="this.style.background='var(--teal-light)'" onmouseout="this.style.background=''" onclick="markAllRead()">Mark all read</div>
+      </div>
+      <div class="s-body" id="alerts-body">
+        <div class="notif-item urgent" id="notif-1" onclick="dismissNotif('notif-1')">
+          <div class="notif-dot" style="background:var(--red)"></div>
+          <div style="flex:1"><div class="n-title">High alert — Punta Princesa</div><div class="n-sub">Plastic surge detected · 2 min ago</div><div style="margin-top:5px"><span class="badge b-high">Immediate action</span></div></div>
+        </div>
+        <div class="notif-item urgent" id="notif-2" onclick="dismissNotif('notif-2')">
+          <div class="notif-dot" style="background:var(--red)"></div>
+          <div style="flex:1"><div class="n-title">High alert — Guadalupe Creek</div><div class="n-sub">New citizen report submitted · 14 min ago</div><div style="margin-top:5px"><span class="badge b-high">Needs scheduling</span></div></div>
+        </div>
+        <div class="notif-item" id="notif-3" onclick="dismissNotif('notif-3')">
+          <div class="notif-dot" style="background:var(--amber)"></div>
+          <div style="flex:1"><div class="n-title">Moderate surge — Labangon</div><div class="n-sub">3 reports in this area · 1h ago</div><div style="margin-top:5px"><span class="badge b-mod">Monitor closely</span></div></div>
+        </div>
+        <div class="notif-item" id="notif-4" onclick="dismissNotif('notif-4')">
+          <div class="notif-dot" style="background:var(--amber)"></div>
+          <div style="flex:1"><div class="n-title">Moderate — Kinasang-an</div><div class="n-sub">Organic waste buildup · 2h ago</div><div style="margin-top:5px"><span class="badge b-prog">Scheduled Apr 7</span></div></div>
+        </div>
+        <div class="notif-item" id="notif-5" onclick="dismissNotif('notif-5')">
+          <div class="notif-dot" style="background:var(--teal)"></div>
+          <div style="flex:1"><div class="n-title">Cleanup completed — Mambaling</div><div class="n-sub">Team B finished cleanup · 3h ago</div><div style="margin-top:5px"><span class="badge b-done">Resolved</span></div></div>
+        </div>
+        <div class="notif-item" id="notif-6" onclick="dismissNotif('notif-6')">
+          <div class="notif-dot" style="background:var(--blue)"></div>
+          <div style="flex:1"><div class="n-title">New citizen message</div><div class="n-sub">Juan M. replied on report #082 · 3h ago</div></div>
+        </div>
+      </div>
+      <div class="nav-bar">
+        <div class="nav-tab" onclick="navigate('dashboard')"><svg viewBox="0 0 16 16"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg><span>Dashboard</span></div>
+        <div class="nav-tab" onclick="navigate('reports')"><svg viewBox="0 0 16 16"><path d="M2 13 L5 8 L8 10 L11 5 L14 7"/></svg><span>Reports</span></div>
+        <div class="nav-tab" onclick="navigate('schedule')"><svg viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="11" rx="1"/><path d="M5 1v4M11 1v4M2 7h12"/></svg><span>Schedule</span></div>
+        <div class="nav-tab active" onclick="navigate('alerts')"><svg viewBox="0 0 16 16"><path d="M13 11V7A5 5 0 0 0 3 7v4l-1 2h12l-1-2z"/><path d="M6.5 13a1.5 1.5 0 0 0 3 0"/></svg><span>Alerts</span></div>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+  </div>
+</div>
+
+<script>
+  let current = 'loading';
+  const order = ['loading','login','signup','dashboard','reports','schedule','alerts'];
+
+  function navigate(to) {
+    if (to === current) return;
+    const fromEl = document.getElementById('screen-' + current);
+    const toEl   = document.getElementById('screen-' + to);
+    if (!fromEl || !toEl) return;
+    const dir = order.indexOf(to) >= order.indexOf(current) ? 1 : -1;
+    toEl.style.transition   = 'none';
+    toEl.style.transform    = `translateX(${dir * 30}px)`;
+    toEl.style.opacity      = '0';
+    toEl.style.pointerEvents = 'none';
+    toEl.classList.add('active');
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        toEl.style.transition   = 'opacity 0.22s ease, transform 0.22s ease';
+        fromEl.style.transition = 'opacity 0.22s ease, transform 0.22s ease';
+        toEl.style.transform    = 'translateX(0)';
+        toEl.style.opacity      = '1';
+        toEl.style.pointerEvents = 'all';
+        fromEl.style.transform  = `translateX(${-dir * 30}px)`;
+        fromEl.style.opacity    = '0';
+      });
+    });
+    setTimeout(() => { fromEl.classList.remove('active'); fromEl.style.cssText = ''; toEl.style.transition = ''; }, 240);
+    current = to;
+    updateNavBars(to);
+  }
+
+  function updateNavBars(active) {
+    const navMap = { dashboard:0, reports:1, schedule:2, alerts:3, loading:-1, login:-1, signup:-1 };
+    document.querySelectorAll('.screen').forEach(s => s.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active')));
+    const scr = document.getElementById('screen-' + active);
+    if (!scr) return;
+    const idx = navMap[active];
+    if (idx >= 0) { const tabs = scr.querySelectorAll('.nav-tab'); if (tabs[idx]) tabs[idx].classList.add('active'); }
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2400);
+  }
+
+  function loginAdmin() {
+    showToast('Verifying admin credentials...');
+    setTimeout(() => navigate('dashboard'), 900);
+  }
+
+  function signupAdmin() {
+    showToast('Request submitted — pending review');
+    setTimeout(() => navigate('login'), 1200);
+  }
+
+  function filterChip(el) {
+    el.closest('.filter-row').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    showToast('Filtered: ' + el.textContent);
+  }
+
+  const teams = ['Select team','Team A — 6 members','Team B — 4 members','Team C — 8 members'];
+  let teamIdx = 0;
+  function cycleTeam(el) {
+    teamIdx = (teamIdx + 1) % teams.length;
+    el.childNodes[0].textContent = teams[teamIdx] + ' ';
+    el.classList.toggle('placeholder', teamIdx === 0);
+    if (teamIdx > 0) showToast(teams[teamIdx] + ' selected');
+  }
+
+  function approveSchedule() { document.getElementById('schedule-success').classList.add('show'); }
+  function dismissSuccess()   { document.getElementById('schedule-success').classList.remove('show'); navigate('reports'); }
+
+  function dismissNotif(id) {
+    const el = document.getElementById(id);
+    el.style.transition = 'opacity 0.2s, transform 0.2s, max-height 0.25s, margin 0.25s, padding 0.25s';
+    el.style.opacity = '0'; el.style.transform = 'translateX(20px)';
+    el.style.maxHeight = el.offsetHeight + 'px';
+    requestAnimationFrame(() => requestAnimationFrame(() => { el.style.maxHeight = '0'; el.style.padding = '0'; el.style.margin = '0'; }));
+    setTimeout(() => el.remove(), 350);
+    showToast('Notification dismissed');
+  }
+
+  function markAllRead() {
+    const items = document.getElementById('alerts-body').querySelectorAll('.notif-item');
+    items.forEach((el, i) => {
+      setTimeout(() => {
+        el.style.transition = 'opacity 0.2s, transform 0.2s, max-height 0.25s, margin 0.25s, padding 0.25s';
+        el.style.opacity = '0'; el.style.transform = 'translateX(20px)';
+        el.style.maxHeight = el.offsetHeight + 'px';
+        requestAnimationFrame(() => requestAnimationFrame(() => { el.style.maxHeight = '0'; el.style.padding = '0'; el.style.margin = '0'; }));
+        setTimeout(() => el.remove(), 350);
+      }, i * 60);
+    });
+    setTimeout(() => showToast('All notifications cleared'), 400);
+  }
+</script>
+</body>
+</html>
